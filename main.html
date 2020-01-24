@@ -1,0 +1,114 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Dropzone with Mapbox</title>
+	<link href="dropzone.css" type="text/css" rel="stylesheet" />
+</head>
+
+<body>
+	<img src="" id="meImg" alt="image">
+	<form action="UPLOAD_FILE_SCRIPT_PATH" class="dropzone" id="my-dropzone">
+	<input type="submit">	
+	</form>	
+	
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+<script src="dropzone.js"></script>
+<script async>
+	var Mapbox_accessToken 	=	"PASTE_YOUR_TOKEN_HERE";
+	
+	function encode64(blob) {
+			var output = '';
+
+			var reader = new FileReader();
+
+			reader.onload = function () {
+				var b64 = reader.result.replace(/^data:.+;base64,/, '');
+				console.log(b64); 
+
+				// Decode the Base64 string and show result just to make sure that everything is OK
+				output = atob(b64);
+				console.log(output); 
+				return output;
+			};
+
+			// Since everything is set up, let's read the Blob and store the result as Data URI
+			reader.readAsDataURL(blob);	
+	}	
+	
+Dropzone.options.myDropzone = {
+    autoProcessQueue: false,
+	autoQueue: true,
+	acceptedFiles: "image/*",
+	
+	init: function() {
+        dz = this;
+        
+		 $("#my-dropzone").submit(function (e) {
+               e.preventDefault();
+               e.stopPropagation();
+			
+				console.log(dz.files.length);
+			 
+			 console.log(dz.files);
+			 
+			if(dz.files.length > 0){
+				dz.processQueue();
+			}
+			 
+		 });
+		 
+		 let mapBoxUrl	= "https://api.mapbox.com/styles/v1/mapbox/streets-v11/static/74.4935913,31.4647119,12.67,0.00,0.00/361x262@2x?logo=false&access_token=" + Mapbox_accessToken;
+		
+ 		 $.ajax({
+            	url: mapBoxUrl,
+            	
+				xhrFields:{
+					responseType: 'blob'
+				},
+			}).done( function(blob, status, resp){
+				//const img = new Image();
+				const img 	=	new Image;
+		
+				var urlCreator = window.URL || window.webkitURL;
+				let imageUrl = urlCreator.createObjectURL( blob );
+				
+				img.src = imageUrl;
+			    img.onload=  function() {
+					
+				 // detect width here
+				  let width		=   img.width;  
+				  let height	= 	img.height;
+				  let size		= 	( width * height)/1024;
+				  
+					
+					var parts = [blob, new ArrayBuffer()];
+
+					file = new File(parts, "mb_data.png", {
+						lastModified: new Date(0), // optional - default = now
+						type: "image/png",
+						status: Dropzone.ADDED,
+						width:width,
+						height: height,
+						size: size,
+						accepted: true,
+						url: imageUrl,
+						dataURL: "data:image/png;base64," + encode64(blob)
+						
+					});					
+					dz.addFile(file);
+					dz.emit("complete", file);	
+
+				};
+
+            }).
+            fail(function(resp){
+                    console.log(resp.statusText );
+            });		
+    }
+	
+};
+	</script>
+
+</body>
+</html>
